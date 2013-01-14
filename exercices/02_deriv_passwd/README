@@ -1,0 +1,16 @@
+[Sommaire]
+1. Configuration
+2. Compilation
+3. Execution
+
+1. [Configuration]
+Deux versions de la bibliothèque "polarssl" sont présentes dans le
+répertoire "lib" : une version 32 bits et une 64 bits.
+Modifier le Makefile, selon votre système pour utiliser la bonne 
+bibliothèque.
+
+2. [Compilation]
+$ make
+
+3. [Execution]
+$ ./bin/deriv_passwd

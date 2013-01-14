@@ -41,8 +41,7 @@ int main(int argc, char **argv)
 	key = (unsigned char *)malloc(key_length * sizeof(char));
 	if(key == NULL)
 	{
-		fprintf(stderr, "error: can't allocate enough space for \
-		key\n");
+		fprintf(stderr, "error: can't allocate enough space for key\n");
 		return -1;
 	}
 	
