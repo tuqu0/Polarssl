@@ -1,20 +1,15 @@
-#include "../include/protect_buffer.h"
+#include "../include/unprotect_buffer.h"
 
 const unsigned char padding[16] = {
 	0x80, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
 	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
 };
 
-unsigned char iv[16] = {
-	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
-};
-
-int protect_buffer(unsigned char **output, int *output_len,
-		unsigned char *input, int input_len,
-		char *password,
-		unsigned char *salt, int salt_len,
-		unsigned int iterations)
+int unprotect_buffer(unsigned char **output, int *output_len,
+		     unsigned char *input, int input_len,
+		     char *password,
+		     unsigned char *salt, int salt_len,
+    		     unsigned int iterations)
 {
 	int ret;
 	int i;
@@ -25,7 +20,9 @@ int protect_buffer(unsigned char **output, int *output_len,
 	int pad_len;
 	unsigned char *input_padd;
 	unsigned char *cipher;
+	unsigned char iv[16];
 	aes_context aes_ctx;
+
 
 	/* *** Initialisation *** */
 	input_padd = NULL;
@@ -33,7 +30,8 @@ int protect_buffer(unsigned char **output, int *output_len,
 
 	/* *** Deriv password to MasterKey *** */
 	ret = deriv_passwd(k_m, password, salt, salt_len, iterations);
-	if(ret != 0) {
+	if(ret != 0)
+	{
 		fprintf(stderr, "error: deriv_passwd\n");
 		return 1;
 	}
@@ -66,6 +64,8 @@ int protect_buffer(unsigned char **output, int *output_len,
 
 	ret = aes_crypt_cbc(&aes_ctx, AES_ENCRYPT, (size_t) (input_len + pad_len), (unsigned char *)iv, input_padd, cipher);
 
+	//ret = aes_crypt_ecb(&aes_ctx, AES_ENCRYPT, input_padd, cipher);
+	
 	if(ret != 0)
 		goto cleanup;
 	

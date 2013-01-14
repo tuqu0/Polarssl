@@ -1,6 +1,6 @@
 CC=gcc
 EXEC=deriv_passwd
-FILES= ./src/main.c ./src/deriv_passwd.c ./src/gen_key.c
+FILES= ./src/main.c ./src/deriv_passwd.c
 CFLAGS= -ggdb
 LDFLAGS= -L ./lib/
 LIBS= ./lib/libpolarssl64bits.a

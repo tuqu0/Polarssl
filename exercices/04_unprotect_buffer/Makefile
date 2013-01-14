@@ -1,7 +1,7 @@
 CC=gcc
-EXEC=protect_buffer
-FILES= ./src/main.c ./src/deriv_passwd.c ./src/protect_buffer.c
-CFLAGS= -ggdb -O0
+EXEC=unprotect_buffer
+FILES= ./src/main.c ./src/deriv_passwd.c ./src/unprotect_buffer.c
+CFLAGS= -ggdb -O0 -Wall
 LDFLAGS= -L ./lib/
 LIBS= ./lib/libpolarssl64bits.a
 OBJS=$(FILES:.c=.o)
