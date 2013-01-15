@@ -15,4 +15,4 @@ avec le bon mot de passe.
 $ make
 
 3. [Execution]
-$ ./bin/gen_key
+$ ./bin/unprotect_buffer
