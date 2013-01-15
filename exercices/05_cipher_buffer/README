@@ -13,4 +13,4 @@ bibliothèque.
 $ make
 
 3. [Execution]
-$ ./bin/gen_key
+$ ./bin/cipher_buffer
