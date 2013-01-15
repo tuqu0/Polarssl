@@ -1,5 +1,6 @@
 #include "../include/gen_keyRSA.h"
 #include "../include/cipher_buffer.h"
+#include "../include/decipher_buffer.h"
 #include "../include/gen_key.h"
 
 void print_hex(unsigned char *buffer, int buffer_len, char *id)
@@ -14,9 +15,9 @@ void print_hex(unsigned char *buffer, int buffer_len, char *id)
 
 int main(int argc, char **argv)
 {
-	char *input;
+	char *input, *plain = NULL;
 	unsigned char *cipher;
-	int input_len, cipher_len, ret;
+	int input_len, cipher_len, ret, plain_len = 0;
 	unsigned char key[16];
 
 	/* *** Check parameters *** */
@@ -46,8 +47,10 @@ int main(int argc, char **argv)
 	ret = cipher_buffer(&cipher, &cipher_len, (unsigned char *) input, input_len, "rsa.pub", key);
 
 	/* *** Display ciphere text and len *** */
-	printf("output len : %d\n", cipher_len);
 	print_hex(cipher, cipher_len, "cipher = ");
+
+	ret = decipher_buffer((unsigned char **) &plain, &plain_len, cipher, cipher_len, "rsa.priv");
+	printf("message : %s\n", plain);
 
 	return ret;
 }
