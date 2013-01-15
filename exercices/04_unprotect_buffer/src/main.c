@@ -19,30 +19,23 @@ int print_hex(unsigned char *buffer, int buffer_len, char *id)
 int main(int argc, char *argv[])
 
 {
-	int i;
-	int ret;
-	int salt_len;
-	unsigned int hex;
+	int c, i, ret, f_len, output_len;
+	unsigned int iterations; 
 	unsigned char key[32]; //SHA256 used
 	char password[33];
 	char salt[16];
-	unsigned int iterations;
-	unsigned char input[4096];
-	int input_len;
 	unsigned char *output;
-	int output_len;
+	unsigned char *input;
+	FILE *f;
 
 	/* *** check parameters *** */
 	if (argc != 5) {
-		fprintf(stderr, "usage : %s <password> <ciphered_text> <salt> <iterations>\n", argv[0]);
+		fprintf(stderr, "usage : %s <password> <ciphered_text_file> <salt> \
+<iterations>\n", argv[0]);
 		return 1;
 	}
 	else if (strlen(argv[1]) > 32) {
 		fprintf(stderr, "error : password too long (32 characters max)\n");
-		return 1;
-	}
-	else if ((strlen(argv[2]) / 2) > 4095) {
-		fprintf(stderr, "error : ciphered text too long (4095 characters max)\n");
 		return 1;
 	}
 	else if (strlen(argv[3]) > 16) {
@@ -55,32 +48,45 @@ int main(int argc, char *argv[])
 	}
 
 	/* *** initialization *** */
-	salt_len = strlen(argv[3]);
-	strcpy(salt, argv[3]);
 	strcpy(password, argv[1]);
 	password[strlen(argv[1])] = '\0';
-	input_len = strlen(argv[2]) / 2;
-	for (i = 0; i < input_len && sscanf(argv[2], "%02X", &hex) == 1; i++) {
-		input[i] = (unsigned char) hex;
-		printf("input %c\n", input[i]);
-	}
-	input[input_len] = '\0';
+	memset(salt, 0x00, 16);
+	memcpy(salt, argv[3], strlen(argv[3]));
 	iterations = atoi(argv[4]);
 	ret = 1;
 	output = NULL;
-	
+	f = NULL;
+
+	/* *** read ciphered text from given file *** */
+	if ((f = fopen(argv[2], "r")) == 0) {
+		fprintf(stderr, "file not found\n");
+		goto cleanup;
+	}
+	fseek(f, 0, SEEK_END);
+	f_len = ftell(f);
+	input = (unsigned char *) malloc(sizeof(unsigned char) * f_len);
+	if (input == NULL)
+		goto cleanup;
+	i = 0;
+	while(fscanf(f, "%02X", &c) > 0 && i < f_len)
+		input[i++] = (unsigned char) c;
+
 	/* *** protect buffers *** */
-	ret = unprotect_buffer(&output, &output_len, input, input_len, password,
-			     (unsigned char*) salt, salt_len, iterations);
+	ret = unprotect_buffer(&output, &output_len, input, f_len / 2, password,
+			     (unsigned char*) salt, 16, iterations);
 	printf(">>> ret : %d\n", ret);
 	print_hex(output, output_len, "OUTPUT");
 	
 	ret = 0;
+
 cleanup:
 	/* *** cleanup and return *** */
+	if (f != NULL)
+		fclose(f);
+	if (input != NULL)
+		free(input);
 	memset(key, 0x00, 32);
 	memset(password, 0x00, 33);
-	memset(input, 0x00, 4096);
 	memset(salt, 0x00, 16);
 	iterations = 0;
 
