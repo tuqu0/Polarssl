@@ -17,11 +17,11 @@ int print_hex(unsigned char *buffer, int buffer_len, char *id)
 
 int main(int argc, char **argv)
 {
-	int ret;
+	int ret, password_len, salt_len;
 	unsigned char key[32]; //SHA256 used
-	char password[33];
-	unsigned char salt[16];
 	unsigned int iterations;
+	char *password;
+	unsigned char *salt;
 
 	/* *** check parameters *** */
 	if (argc != 4) {
@@ -42,15 +42,24 @@ int main(int argc, char **argv)
 	}
 
 	/* *** initialization *** */
-	memset(salt, 0x00, 16);
-	memcpy(salt, argv[2], strlen(argv[2]));
+	password_len = strlen(argv[1]);
+	password = (char *) malloc(sizeof(char) * (password_len + 1));
+	salt_len = strlen(argv[2]);
+	salt = (unsigned char *) malloc(sizeof(unsigned char) * salt_len);
+	if (password == NULL || salt == NULL) {
+		fprintf(stderr, "error : memory allocation fails\n");
+		password_len = 0;
+		salt_len = 0;
+		return 1;
+	}
 	strcpy(password, argv[1]);
-	password[strlen(argv[1])] = '\0';
+	password[password_len] = '\0';
+	memcpy(salt, argv[2], salt_len);
 	iterations = atoi(argv[3]);
 	ret = 1;
 	
 	/* *** deriv password *** */
- 	ret = deriv_passwd(key, password, salt, 16, iterations);
+ 	ret = deriv_passwd(key, password, salt, salt_len, iterations);
 	if(ret != 0)
 		goto cleanup;
 
@@ -62,8 +71,12 @@ int main(int argc, char **argv)
 cleanup:
 	/* *** cleanup and return *** */
 	memset(key, 0x00, 32);
-	memset(password, 0x00, 33);
-	memset(salt, 0x00, 16);
+	memset(password, 0x00, password_len);
+	password_len = 0;
+	free(password);
+	memset(salt, 0x00, salt_len);
+	salt_len = 0;
+	free(salt);
 	iterations = 0;
 
 	return ret;
