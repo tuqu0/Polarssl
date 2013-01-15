@@ -1,14 +1,20 @@
 #include "../include/unprotect_buffer.h"
 
-const unsigned char padding[16] = {
-	0x80, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
-};
-
-unsigned char iv[16] = {
+unsigned char iv[16] =
+{
 	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
 	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
 };
+
+int getPaddingOffset(unsigned char* input_padd, int len)
+{
+	int i = -1;
+	
+	for (i = len - 1; i >= 0; i--)
+		if (input_padd[i] == 0x80)
+			return i;
+	return i;	
+}
 
 int unprotect_buffer(unsigned char **output, int *output_len,
 		     unsigned char *input, int input_len,
@@ -22,19 +28,17 @@ int unprotect_buffer(unsigned char **output, int *output_len,
 	unsigned char k_i[32];
 	unsigned char tmp_1[36];
 	unsigned char tmp_2[32];
-	int pad_len;
-	unsigned char *input_padd;
-	unsigned char *cipher;
-	unsigned char *plain;
+	unsigned char *input_padd = NULL;
+	unsigned char *cipher = NULL;
+	unsigned char *plain = NULL;
 	aes_context aes_ctx;
 	sha2_context sha_ctx;
 
 	/* *** Initialisation *** */
-	input_padd = NULL;
 	cipher = (unsigned char *) malloc((input_len - 32) * sizeof(char));
 	input_padd = (unsigned char *) malloc((input_len - 32) * sizeof(char));
 	if (cipher == NULL || input_padd == NULL) {
-		fprintf(stderr, "error : memory allocation failed\n");
+		fprintf(stderr, "error : memory allocation fails\n");
 		return 1;
 	}
 
@@ -76,18 +80,14 @@ int unprotect_buffer(unsigned char **output, int *output_len,
 		fprintf(stderr, "error : unable to set the key\n");
 		goto cleanup;
 	}
-	ret = aes_crypt_cbc(&aes_ctx, AES_DECRYPT, input_len - 32, (unsigned char *)iv, cipher, 
-			    input_padd);
+	ret = aes_crypt_cbc(&aes_ctx, AES_DECRYPT, input_len - 32, iv, cipher, input_padd);
 	if (ret != 0) {
 		fprintf(stderr, "error : unable to decrypt\n");
 		goto cleanup;
 	}
 
 	/* *** Padding *** */
-	for (offset = input_len - 32; offset >= 0; offset--) {
-		if (input_padd[offset] == 0x80)
-			break;
-	}
+	offset = getPaddingOffset(input_padd, input_len - 32);
 	plain = (unsigned char *) malloc(offset * sizeof(char));
 	if (plain == NULL)
 		goto cleanup;
@@ -99,10 +99,12 @@ int unprotect_buffer(unsigned char **output, int *output_len,
 	ret = 0;
 
 cleanup:
-	if(input_padd != NULL)
+	if (input_padd != NULL)
 		free(input_padd);
-	if(cipher != NULL)
+	if (cipher != NULL)
 		free(cipher);
+	if (plain != NULL)
+		free(plain);
 	memset(&aes_ctx, 0x00, sizeof(aes_context));
 	memset(&sha_ctx, 0x00, sizeof(sha_ctx));
 	memset(k_m, 0x00, 32);

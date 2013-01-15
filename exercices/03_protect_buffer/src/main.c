@@ -18,51 +18,39 @@ int print_hex(unsigned char *buffer, int buffer_len, char *id)
 
 int main(int argc, char **argv)
 {
-	int ret, password_len, salt_len, input_len, output_len;
+	int ret, password_len, output_len;
 	unsigned char key[32]; //SHA256 used
+	unsigned char salt[16];
+	unsigned char input[128];
 	unsigned int iterations;
-	char *password;
-	unsigned char *salt, *input, *output;
+	char *password = NULL;
+	unsigned char *output = NULL;
 
 	/* *** check parameters *** */
-	if (argc != 5) {
-		fprintf(stderr, "usage : %s <password> <plain_text> <salt> <iterations>\n", argv[0]);
-		return 1;
-	}
-	else if (strlen(argv[3]) > 16) {
-		fprintf(stderr, "error : salt too long (16 characters max)\n");
-		return 1;
-	}
-	else if (!atoi(argv[4]) || atoi(argv[4]) < 1) {
-		fprintf(stderr, "error : number of iterations must be a positive integer\n");
+	if (argc != 2) {
+		fprintf(stderr, "usage : %s <password>\n", argv[0]);
 		return 1;
 	}
 
 	/* *** initialization *** */
 	password_len = strlen(argv[1]);
 	password = (char *) malloc(sizeof(char) * (password_len + 1));
-	input_len = strlen(argv[2]);
-	input = (unsigned char *) malloc(sizeof(unsigned char) * input_len);
-	salt_len = strlen(argv[3]);
-	salt = (unsigned char *) malloc(sizeof(unsigned char) * salt_len);
-	if (password == NULL || input == NULL || salt == NULL) {
+	if (password == NULL) {
 		fprintf(stderr, "error : memory allocation fails\n");
 		password_len = 0;
-		input_len = 0;
-		salt_len = 0;
-		return 1;
+		return 1;	
 	}
 	strcpy(password, argv[1]);
 	password[password_len] = '\0';
-	memcpy(input, argv[2], input_len);
-	memcpy(salt, argv[3], salt_len);
-	iterations = atoi(argv[4]);
+	memset(input, 0x12, 128); // input = 0x12 ... 0x12
+	memset(salt, 0x00, 16); // salt = 0x00 ... 0x00
+	iterations = 1<<5; //32
 	ret = 1;
 	output = NULL;
 	
 	/* *** protect buffers *** */
-	ret = protect_buffer(&output, &output_len, input, input_len, password,
-			     (unsigned char*) salt, salt_len, iterations);
+	ret = protect_buffer(&output, &output_len, input, 128, password,
+			     salt, 16, iterations);
 	printf(">>> ret : %d\n", ret);
 	print_hex(output, output_len, "OUTPUT");
 	
@@ -74,12 +62,8 @@ cleanup:
 	memset(password, 0x00, password_len);
 	password_len = 0;
 	free(password);
-	memset(input, 0x00, input_len);
-	input_len = 0;
-	free(input);
-	memset(salt, 0x00, salt_len);
-	salt_len = 0;
-	free(salt);
+	memset(input, 0x00, 128);
+	memset(salt, 0x00, 16);
 	iterations = 0;
 
 	return ret;

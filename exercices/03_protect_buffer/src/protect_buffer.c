@@ -1,11 +1,13 @@
 #include "../include/protect_buffer.h"
 
-const unsigned char padding[16] = {
+const unsigned char padding[16] =
+{
 	0x80, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
 	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
 };
 
-unsigned char iv[16] = {
+unsigned char iv[16] =
+{
 	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
 	0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
 };
@@ -16,20 +18,14 @@ int protect_buffer(unsigned char **output, int *output_len,
 		unsigned char *salt, int salt_len,
 		unsigned int iterations)
 {
-	int ret;
-	int i;
+	int i, pad_len, ret;
 	unsigned char k_m[32];
 	unsigned char k_c[32];
 	unsigned char k_i[32];
 	unsigned char tmp_1[36];
-	int pad_len;
-	unsigned char *input_padd;
-	unsigned char *cipher;
+	unsigned char *input_padd = NULL;
+	unsigned char *cipher = NULL;
 	aes_context aes_ctx;
-
-	/* *** Initialisation *** */
-	input_padd = NULL;
-	cipher = NULL;
 
 	/* *** Deriv password to MasterKey *** */
 	ret = deriv_passwd(k_m, password, salt, salt_len, iterations);
@@ -64,7 +60,7 @@ int protect_buffer(unsigned char **output, int *output_len,
 	if(ret != 0)
 		goto cleanup;
 
-	ret = aes_crypt_cbc(&aes_ctx, AES_ENCRYPT, (size_t) (input_len + pad_len), (unsigned char *)iv, input_padd, cipher);
+	ret = aes_crypt_cbc(&aes_ctx, AES_ENCRYPT, (size_t) (input_len + pad_len), iv, input_padd, cipher);
 
 	if(ret != 0)
 		goto cleanup;
