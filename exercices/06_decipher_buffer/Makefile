@@ -1,5 +1,5 @@
 CC=gcc
-EXEC=cipher_buffer
+EXEC=decipher_buffer
 FILES= ./src/main.c ./src/decipher_buffer.c
 CFLAGS= -ggdb -O0 -Wall
 LDFLAGS= -L ./lib/
