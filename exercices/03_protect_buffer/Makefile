@@ -1,6 +1,6 @@
 CC=gcc
 EXEC=protect_buffer
-FILES= ./src/main.c ./src/deriv_passwd.c ./src/protect_buffer.c
+FILES= ./src/main.c ./src/deriv_passwd.c ./src/protect_buffer.c ./src/utils.c
 CFLAGS= -ggdb -O0
 LDFLAGS= -L ./lib/
 LIBS= ./lib/libpolarssl64bits.a

@@ -1,6 +1,6 @@
 CC=gcc
 EXEC=unprotect_buffer
-FILES= ./src/main.c ./src/deriv_passwd.c ./src/unprotect_buffer.c
+FILES= ./src/main.c ./src/deriv_passwd.c ./src/unprotect_buffer.c ./src/utils.c
 CFLAGS= -ggdb -O0 -Wall
 LDFLAGS= -L ./lib/
 LIBS= ./lib/libpolarssl64bits.a

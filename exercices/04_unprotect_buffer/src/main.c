@@ -1,20 +1,4 @@
-#include "../include/deriv_passwd.h"
-#include "../include/unprotect_buffer.h"
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-
-int print_hex(unsigned char *buffer, int buffer_len, char *id)
-{
-	int i;
-
-	printf(">>> %s\n", id);
-	for(i = 0; i < buffer_len; i++)
-		printf("%02X", buffer[i]);
-	printf("\n");
-	
-	return 0;
-}
+#include "../include/main.h"
 
 int main(int argc, char **argv)
 {
@@ -22,10 +6,10 @@ int main(int argc, char **argv)
 	unsigned int iterations; 
 	unsigned char key[32]; //SHA256 used
 	unsigned char salt[16];
-	char *password = NULL;
-	unsigned char *output = NULL;
-	unsigned char *input = NULL;
-	FILE *f = NULL;
+	char *password;
+	unsigned char *output;
+	unsigned char *input;
+	FILE *f;
 
 	/* *** check parameters *** */
 	if (argc != 3) {
@@ -33,38 +17,58 @@ int main(int argc, char **argv)
 		return 1;
 	}
 
-	/* *** initialization *** */
+	/* *** Init *** */
+	c = 0;
+	i = 0;
+	f_len = 0;
+	ret = 1;
+	password_len = 0;
+	output_len = 0;
+	password = NULL;
+	output = NULL;
+	input = NULL;
+	f = NULL;
+
+	/* *** Get password *** */
 	password_len = strlen(argv[1]);
 	password = (char *) malloc(sizeof(char) * (password_len + 1));
 	if (password == NULL) {
-		fprintf(stderr, "error : memory allocation fails\n");
-		password_len = 0;
-		return 1;
+		fprintf(stderr, "error : memory allocation failed\n");
+		ret = 1;
+		goto cleanup;
 	}
 	strcpy(password, argv[1]);
 	password[password_len] = '\0';
-	memset(salt, 0x00, 16);
+
+	/* *** Set salt *** */
+	memset(salt, 0x00, 16); // salt = 0x00 ... 0x00
+	
+	/* *** Set number of iterations *** */
 	iterations = 1<<5; // 32
-	ret = 1;
 
 	/* *** read ciphered text from given file *** */
 	if ((f = fopen(argv[2], "r")) == 0) {
-		fprintf(stderr, "unable to read %s\n", argv[2]);
+		fprintf(stderr, "unable to open %s\n", argv[2]);
 		goto cleanup;
 	}
 	fseek(f, 0, SEEK_END);
 	f_len = ftell(f);
 	fseek(f, SEEK_SET, 0);
 	input = (unsigned char *) malloc(sizeof(unsigned char) * f_len);
-	if (input == NULL)
+	if (input == NULL) {
+		fprintf(stderr, "error : memory allocation failed\n");
+		ret = 1;
 		goto cleanup;
+	}
 	i = 0;
 	while(fscanf(f, "%02X", &c) > 0 && i < f_len)
 		input[i++] = (unsigned char) c;
 
 	/* *** unprotect buffers *** */
-	ret = unprotect_buffer(&output, &output_len, input, f_len / 2, password,
-			       salt, 16, iterations);
+	ret = unprotect_buffer(&output, &output_len, input, f_len / 2,
+			       password, salt, 16, iterations);
+
+	/* *** Print plain text *** */
 	printf(">>> ret : %d\n", ret);
 	print_hex(output, output_len, "OUTPUT");
 	
@@ -74,13 +78,29 @@ cleanup:
 	/* *** cleanup and return *** */
 	if (f != NULL)
 		fclose(f);
-	if (input != NULL)
+
+	if (input != NULL) {
+		memset(input, 0x00, f_len);
 		free(input);
+	}
+	f_len = 0;
+
 	memset(key, 0x00, 32);
-	memset(password, 0x00, password_len);
+
+	if (password != NULL) {
+		memset(password, 0x00, password_len);
+		free(password);
+	}
 	password_len = 0;
-	free(password);
+
+	if (output != NULL) {
+		memset(output, 0x00, output_len);
+		free(output);
+	}
+	output_len = 0;
+
 	memset(salt, 0x00, 16);
+
 	iterations = 0;
 
 	return ret;

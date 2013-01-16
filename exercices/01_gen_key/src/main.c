@@ -1,19 +1,4 @@
-#include "../include/gen_key.h"
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-
-int print_hex(unsigned char *buffer, int buffer_len, char *id)
-{
-	int i;
-
-	printf(">>> %s\n", id);
-	for(i = 0; i < buffer_len; i++)
-		printf("%02X", buffer[i]);
-	printf("\n");
-	
-	return 0;
-}
+#include "../include/main.h"
 
 int main(int argc, char **argv)
 {
@@ -23,6 +8,7 @@ int main(int argc, char **argv)
 
 	/* *** initialization *** */
 	key = NULL;
+	key_length = 0;
 	ret = 1;
 	
 	/* *** check cmd line argument *** */
@@ -39,9 +25,8 @@ int main(int argc, char **argv)
 	
 	/* *** allocate space for key *** */
 	key = (unsigned char *)malloc(key_length * sizeof(char));
-	if(key == NULL)
-	{
-		fprintf(stderr, "error: can't allocate enough space for key\n");
+	if(key == NULL)	{
+		fprintf(stderr, "error: memory allocation failed\n");
 		return -1;
 	}
 	
@@ -54,11 +39,13 @@ int main(int argc, char **argv)
 	print_hex(key, key_length, "key = ");
 	
 	ret = 0;
+
 cleanup:
 	/* *** cleanup and return *** */
 	memset(key, 0x00, key_length);
 	free(key);
 	key = NULL;
+	key_length = 0;
 
 	return ret;
 }

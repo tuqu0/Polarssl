@@ -28,28 +28,43 @@ int unprotect_buffer(unsigned char **output, int *output_len,
 	unsigned char k_i[32];
 	unsigned char tmp_1[36];
 	unsigned char tmp_2[32];
-	unsigned char *input_padd = NULL;
-	unsigned char *cipher = NULL;
-	unsigned char *plain = NULL;
+	unsigned char *input_padd;
+	unsigned char *cipher;
+	unsigned char *plain;
 	aes_context aes_ctx;
 	sha2_context sha_ctx;
 
-	/* *** Initialisation *** */
-	cipher = (unsigned char *) malloc((input_len - 32) * sizeof(char));
-	input_padd = (unsigned char *) malloc((input_len - 32) * sizeof(char));
-	if (cipher == NULL || input_padd == NULL) {
-		fprintf(stderr, "error : memory allocation fails\n");
-		return 1;
-	}
+	/* *** Init *** */
+	ret = 1;
+	i = 0;
+	offset = 0;
+	input_padd = NULL;
+	cipher = NULL;
+	plain = NULL;
 
-	memcpy(tmp_2, input + (input_len - 32), 32);
+	/* *** Get cipher text *** */
+	cipher = (unsigned char *) malloc((input_len - 32) * sizeof(char));
+	if (cipher == NULL) {
+		fprintf(stderr, "error : memory allocation failed\n");
+		ret = 1;
+		goto cleanup;
+	}
 	memcpy(cipher, input, input_len - 32);
+	input_padd = (unsigned char *) malloc((input_len - 32) *
+					       sizeof(char));
+	if (input_padd == NULL) {
+		fprintf(stderr, "error : memory allocation failed\n");
+		ret = 1;
+		goto cleanup;
+	}
+	memcpy(tmp_2, input + (input_len - 32), 32);
 
 	/* *** Deriv password to MasterKey *** */
 	ret = deriv_passwd(k_m, password, salt, salt_len, iterations);
 	if(ret != 0) {
-		fprintf(stderr, "error: deriv_passwd\n");
-		return 1;
+		fprintf(stderr, "error: deriv_passwd failed\n");
+		ret = 1;
+		goto cleanup;
 	}
 
 	/* *** Deriv MasterKey to CipherKey / IntegrityKey *** */
@@ -70,27 +85,33 @@ int unprotect_buffer(unsigned char **output, int *output_len,
 	/* *** Comparison *** */
 	if (memcmp(k_i, tmp_2, 32) != 0) {
 		fprintf(stderr, "error : keys are differents\n");
+		ret = 1;
 		goto cleanup;
 	}
 
 	/* *** Dechiffrement *** */
-	ret = 1;
 	ret = aes_setkey_dec(&aes_ctx, k_c, 256);
 	if (ret != 0) {
-		fprintf(stderr, "error : unable to set the key\n");
+		fprintf(stderr, "error : aes_setkey_dec failed\n");
+		ret = 1;
 		goto cleanup;
 	}
-	ret = aes_crypt_cbc(&aes_ctx, AES_DECRYPT, input_len - 32, iv, cipher, input_padd);
+	ret = aes_crypt_cbc(&aes_ctx, AES_DECRYPT, input_len - 32, iv,
+			    cipher, input_padd);
 	if (ret != 0) {
-		fprintf(stderr, "error : unable to decrypt\n");
+		fprintf(stderr, "error : aes_crypt_cbc failed\n");
+		ret = 1;
 		goto cleanup;
 	}
 
 	/* *** Padding *** */
 	offset = getPaddingOffset(input_padd, input_len - 32);
 	plain = (unsigned char *) malloc(offset * sizeof(char));
-	if (plain == NULL)
+	if (plain == NULL) {
+		fprintf(stderr, "error : memory allocation failed\n");
+		ret = 1;
 		goto cleanup;
+	}
 	memcpy(plain, input_padd, offset);
 
 	/* *** Output *** */
@@ -99,19 +120,30 @@ int unprotect_buffer(unsigned char **output, int *output_len,
 	ret = 0;
 
 cleanup:
-	if (input_padd != NULL)
+	if (input_padd != NULL) {
+		memset(input_padd, 0x00, input_len - 32);
 		free(input_padd);
-	if (cipher != NULL)
+	}
+
+	if (cipher != NULL) {
+		memset(cipher, 0x00, input_len - 32);
 		free(cipher);
-	if (plain != NULL)
-		free(plain);
+	}
 	memset(&aes_ctx, 0x00, sizeof(aes_context));
+
 	memset(&sha_ctx, 0x00, sizeof(sha_ctx));
+
 	memset(k_m, 0x00, 32);
+
 	memset(k_c, 0x00, 32);
+
 	memset(k_i, 0x00, 32);
+
 	memset(tmp_1, 0x00, 36);
+
 	memset(tmp_2, 0x00, 32);
 
+	i = 0;
+	
 	return ret;
 }
