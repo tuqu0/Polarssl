@@ -1,53 +1,74 @@
-#include "../include/gen_keyRSA.h"
-#include "../include/cipher_buffer.h"
-#include "../include/gen_key.h"
-
-void print_hex(unsigned char *buffer, int buffer_len, char *id)
-{
-	int i;
-	
-	printf(">>> %s\n", id);
-	for (i = 0; i < buffer_len; i++)
-		printf("%02X", buffer[i]);
-	printf("\n");
-}
+#include "../include/main.h"
 
 int main(int argc, char **argv)
 {
-	char *input;
+	int ret, input_len, cipher_len;
 	unsigned char *cipher;
-	int input_len, cipher_len, ret;
-	unsigned char key[16];
+	unsigned char *s_key;
+	char *input;
+
+	/* *** Init *** */
+	ret = 1;
+	input_len = 0;
+	cipher_len = 0;
+	input = NULL;
+	cipher = NULL;
+	s_key = NULL;
 
 	/* *** Check parameters *** */
 	if (argc != 2) {
 		fprintf(stderr, "usage : %s <message>\n", argv[0]);
-		return 1;
+		ret = 1;
+		goto cleanup;
 	}
 
-	/* **** Init *** */
-	ret = 1;
-	cipher_len = 0;
-	input_len = strlen(argv[1]);
-	input = (char *) malloc(input_len);
+	/* *** Get input text *** */
+	input = (char *) malloc(strlen(argv[1]));
 	if (input == NULL) {
-		fprintf(stderr, "error : memory allocation fails\n");
-		return ret;
+		fprintf(stderr, "error : memory allocation failed\n");
+		ret = 1;
+		goto cleanup;
 	}
-	memcpy(input, argv[1], input_len);
+	strcpy(input, argv[1]);
+	input_len = strlen(argv[1]);
 
 	/* *** Generate symetric key *** */
-	gen_key(key, 16);
+	s_key = (unsigned char *) malloc(32 * sizeof(unsigned char));
+	if (s_key == NULL) {
+		fprintf(stderr, "error : memory allocation failed\n");
+		ret = 1;
+		goto cleanup;
+	}
+	gen_key(s_key, 16);
 
-	/* *** Generate RSA key *** */
-	gen_keyRSA();
+	/* *** Generate RSA public/private keys *** */
+	gen_keyRSA(PUBLIC_KEY, PRIVATE_KEY);
 
-	/* *** Cipher message *** */
-	ret = cipher_buffer(&cipher, &cipher_len, (unsigned char *) input, input_len, "rsa.pub", key);
+	/* *** Cipher *** */
+	ret = cipher_buffer(&cipher, &cipher_len, 
+			(unsigned char *) input, input_len,
+			PUBLIC_KEY, s_key);
+	if (ret != 0) {
+		fprintf(stderr, "error : unable to cipher input text\n");
+		ret = 1;
+		goto cleanup;
+	}
 
-	/* *** Display ciphere text and len *** */
-	printf("output len : %d\n", cipher_len);
+	/* *** Print ciphered text *** */
 	print_hex(cipher, cipher_len, "cipher = ");
+
+cleanup:
+	if (input != NULL) {
+		memset(input, 0, input_len);
+		free(input);
+		input_len = 0;
+	}
+
+	if (s_key != NULL) {
+		memset(s_key, 0, 16);
+		free(s_key);
+	}
+	cipher_len = 0;
 
 	return ret;
 }

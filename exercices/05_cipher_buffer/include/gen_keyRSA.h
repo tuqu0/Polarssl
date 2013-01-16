@@ -12,6 +12,6 @@
  #define KEY_LEN 1024
  #define EXPONENT 65537
 
- int gen_keyRSA();
+ int gen_keyRSA(char *public_key, char *private_key);
 
 #endif /* _GEN_KEY_RSA_ */

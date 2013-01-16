@@ -1,6 +1,6 @@
 #include "../include/gen_keyRSA.h"
 
-int gen_keyRSA()
+int gen_keyRSA(char *public_key, char *private_key)
 {
 	int ret;
 	ctr_drbg_context drbg_ctx;
@@ -19,7 +19,8 @@ int gen_keyRSA()
 
 	/* *** Generate RSA key *** */
 	rsa_init(&rsa_ctx, RSA_PKCS_V15, 0);
-	ret = rsa_gen_key(&rsa_ctx, ctr_drbg_random, &drbg_ctx, KEY_LEN, EXPONENT);
+	ret = rsa_gen_key(&rsa_ctx, ctr_drbg_random, &drbg_ctx,
+                      KEY_LEN, EXPONENT);
 	if (ret != 0) {
 		fprintf(stderr, "error : rsa_gen_key fails\n");
 		ret = 1;
@@ -27,31 +28,39 @@ int gen_keyRSA()
 	}
 
 	/* *** Save public key *** */
-	f = fopen("rsa.pub", "wb+");
+	f = fopen(public_key, "w+");
 	if (f == NULL) {
-		fprintf(stderr, "error : unbale to write in rsa.pub\n");
+		fprintf(stderr, "error : unbale to open %s\n", public_key);
 		ret = 1;
 		goto cleanup;
 	}
-	mpi_write_file("N = ", &rsa_ctx.N, 16, f);
-	mpi_write_file("E = ", &rsa_ctx.E, 16, f);
+	if (mpi_write_file("N = ", &rsa_ctx.N, 16, f) != 0
+	    || mpi_write_file("E = ", &rsa_ctx.E, 16, f) != 0) {
+		fprintf(stderr, "error : unbale write public key\n");
+		ret = 1;
+		goto cleanup;
+	}
 	fclose(f);
 
 	/* *** Save private key *** */
-	f = fopen("rsa.priv", "wb+");
+	f = fopen(private_key, "w+");
 	if (f == NULL) {
-		fprintf(stderr, "error : unable to write in rsa.priv\n");
+		fprintf(stderr, "error : unable to write in %s\n", private_key);
 		ret = 1;
 		goto cleanup;
 	}
-	mpi_write_file("N = ", &rsa_ctx.N, 16, f);
-	mpi_write_file("E = ", &rsa_ctx.E, 16, f);
-	mpi_write_file("D = ", &rsa_ctx.D, 16, f);
-	mpi_write_file("P = ", &rsa_ctx.P, 16, f);
-	mpi_write_file("Q = ", &rsa_ctx.Q, 16, f);
-	mpi_write_file("DP = ", &rsa_ctx.DP, 16, f);
-	mpi_write_file("DQ = ", &rsa_ctx.DQ, 16, f);
-	mpi_write_file("QP = ", &rsa_ctx.QP, 16, f);
+	if (mpi_write_file("N = ", &rsa_ctx.N, 16, f) != 0
+	    || mpi_write_file("E = ", &rsa_ctx.E, 16, f) != 0
+	    || mpi_write_file("D = ", &rsa_ctx.D, 16, f) != 0
+	    || mpi_write_file("P = ", &rsa_ctx.P, 16, f) != 0
+	    || mpi_write_file("Q = ", &rsa_ctx.Q, 16, f) != 0
+	    || mpi_write_file("DP = ", &rsa_ctx.DP, 16, f) != 0
+	    || mpi_write_file("DQ = ", &rsa_ctx.DQ, 16, f) != 0
+	    || mpi_write_file("QP = ", &rsa_ctx.QP, 16, f) != 0) {
+		fprintf(stderr, "error : unbale write private key\n");
+		ret = 1;
+		goto cleanup;
+	}
 	fclose(f);
 	ret = 0;
 

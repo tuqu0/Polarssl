@@ -12,8 +12,8 @@ int gen_key(unsigned char *key, int key_length)
 		goto cleanup;
 
 	havege_init(&ctx);
-
 	ret = havege_random(&ctx, key, key_length);
+
 cleanup:
 	memset(&ctx, 0x00, sizeof(havege_state));
 	return ret;
