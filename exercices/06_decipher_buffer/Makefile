@@ -1,6 +1,6 @@
 CC=gcc
-EXEC=decipher_buffer
-FILES= ./src/main.c ./src/gen_keyRSA.c ./src/decipher_buffer.c ./src/gen_key.c
+EXEC=cipher_buffer
+FILES= ./src/main.c ./src/decipher_buffer.c
 CFLAGS= -ggdb -O0 -Wall
 LDFLAGS= -L ./lib/
 LIBS= ./lib/libpolarssl64bits.a
