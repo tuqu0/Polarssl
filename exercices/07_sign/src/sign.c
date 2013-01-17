@@ -6,6 +6,7 @@ int sign(unsigned char *output, unsigned char *input, int input_len,
 	int ret;
 	unsigned char hash[32];
 	rsa_context rsa_ctx;
+	havege_state prng_ctx;
 	FILE *f;
 
 	/* *** Init *** */
@@ -40,13 +41,17 @@ int sign(unsigned char *output, unsigned char *input, int input_len,
 	sha2(input, input_len, hash, 0);
 
 	/* *** Sign *** */
-	ret = rsa_pkcs1_sign(&rsa_ctx, NULL, NULL, RSA_PRIVATE,
-			     SIG_RSA_SHA256, 0, hash, output);
+	havege_init(&prng_ctx);
+	ret = rsa_pkcs1_sign(&rsa_ctx, havege_random, &prng_ctx,
+			     RSA_PRIVATE,SIG_RSA_SHA256, 0, hash, output);
+
 cleanup:
 	if (f != NULL)
 		fclose(f);
 	
 	memset(hash, 0x00, 32);
+
+	memset(&prng_ctx, 0x00, sizeof(havege_state));
 
 	rsa_free(&rsa_ctx);
 

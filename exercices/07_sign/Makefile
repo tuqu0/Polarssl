@@ -1,5 +1,5 @@
 CC=gcc
-EXEC=cipher_buffer
+EXEC=sign
 FILES= ./src/main.c ./src/gen_keyRSA.c ./src/gen_key.c ./src/utils.c ./src/sign.c
 CFLAGS= -ggdb -O0 -Wall
 LDFLAGS= -L ./lib/
