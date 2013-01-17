@@ -3,7 +3,7 @@ EXEC=unprotect_buffer
 FILES= ./src/main.c ./src/deriv_passwd.c ./src/unprotect_buffer.c ./src/utils.c
 CFLAGS= -ggdb -O0 -Wall
 LDFLAGS= -L ./lib/
-LIBS= ./lib/libpolarssl64bits.a
+LIBS= ./lib/libpolarssl-amd64.a
 OBJS=$(FILES:.c=.o)
 
 all: $(OBJS)

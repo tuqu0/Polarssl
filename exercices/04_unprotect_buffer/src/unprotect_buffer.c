@@ -8,7 +8,7 @@ unsigned char iv[16] =
 
 int getPaddingOffset(unsigned char* input_padd, int len)
 {
-	int i = -1;
+	int i = 0;
 	
 	for (i = len - 1; i >= 0; i--)
 		if (input_padd[i] == 0x80)
@@ -106,13 +106,14 @@ int unprotect_buffer(unsigned char **output, int *output_len,
 
 	/* *** Padding *** */
 	offset = getPaddingOffset(input_padd, input_len - 32);
-	plain = (unsigned char *) malloc(offset * sizeof(char));
+	plain = (unsigned char *) malloc(offset * sizeof(char) + 1);
 	if (plain == NULL) {
 		fprintf(stderr, "error : memory allocation failed\n");
 		ret = 1;
 		goto cleanup;
 	}
 	memcpy(plain, input_padd, offset);
+    plain[offset * sizeof(char)] = '\0';
 
 	/* *** Output *** */
 	*output = plain;

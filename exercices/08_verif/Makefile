@@ -3,7 +3,7 @@ EXEC=verif
 FILES= ./src/main.c ./src/verif.c
 CFLAGS= -ggdb -O0 -Wall
 LDFLAGS= -L ./lib/
-LIBS= ./lib/libpolarssl64bits.a
+LIBS= ./lib/libpolarssl-amd64.a
 OBJS=$(FILES:.c=.o)
 
 all: $(OBJS)
