@@ -3,7 +3,7 @@ EXEC=cipher_buffer
 FILES= ./src/main.c ./src/gen_keyRSA.c ./src/cipher_buffer.c ./src/gen_key.c ./src/utils.c
 CFLAGS= -ggdb -O0 -Wall
 LDFLAGS= -L ./lib/
-LIBS= ./lib/libpolarssl-amd64.a
+LIBS= ./lib/libpolarssl-x86_64.a
 OBJS=$(FILES:.c=.o)
 
 all: $(OBJS)
