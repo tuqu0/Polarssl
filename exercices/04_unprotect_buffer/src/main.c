@@ -7,7 +7,7 @@ int main(int argc, char **argv)
 	unsigned char key[32]; //SHA256 used
 	unsigned char salt[16];
 	char *password;
-	unsigned char *output;
+	char *output;
 	unsigned char *input;
 	FILE *f;
 
@@ -65,15 +65,15 @@ int main(int argc, char **argv)
 		input[i++] = (unsigned char) c;
 
 	/* *** unprotect buffers *** */
-	ret = unprotect_buffer(&output, &output_len, input, f_len / 2,
-			       password, salt, 16, iterations);
+	ret = unprotect_buffer((unsigned char **) &output, &output_len,
+			       input, f_len / 2, password, salt, 16,
+			       iterations);
 
 	/* *** Print plain text *** */
 	printf(">>> ret : %d\n", ret);
-	print_hex(output, output_len, "OUTPUT");
+	if (ret == 0)
+		printf(">>>OUTPUT\n %s\n", output);
 	
-	ret = 0;
-
 cleanup:
 	/* *** cleanup and return *** */
 	if (f != NULL)
