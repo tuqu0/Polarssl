@@ -48,7 +48,6 @@ int main(int argc, char **argv)
 	}
 	strcpy(input, argv[2]);
 	input[input_len] = '\0';
-//	memset(input, 0x12, 128); //input = 0x12 ... 0x12
 
 	/* *** set salt *** */
 	memset(salt, 0x00, 16); //salt = 0x00 ... 0x00
