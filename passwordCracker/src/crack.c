@@ -2,11 +2,11 @@
 
 bool crack(const char *shadow, MODE mode, const char *dico)
 {
-    int ret;
+    bool ret;
     FILE *f;
 
     /* *** Init *** */
-    ret = 1;
+    ret = false;
     f = NULL;
 
     /* *** Check parameters *** */
@@ -26,5 +26,6 @@ bool crack(const char *shadow, MODE mode, const char *dico)
 exit:
     if (f != NULL)
         fclose(f);
+
     return ret;
 }
