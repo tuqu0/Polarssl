@@ -1,6 +1,6 @@
 CC=gcc
-EXEC=gen_key
-FILES= ./src/main.c ./src/gen_key.c
+EXEC=passwordCracker
+FILES= ./src/main.c ./src/utils.c ./src/crack.c 
 CFLAGS= -ggdb -O0 -Wall
 LDFLAGS= -L ./lib/
 LIBS= ./lib/libpolarssl-x86_64.a
