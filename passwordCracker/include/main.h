@@ -3,8 +3,8 @@
 
  #include <stdio.h>
  #include <unistd.h>
- #include <stdbool.h>
 
+ #include "crack.h"
  #include "utils.h"
 
 #endif /* _MAIN_H_ */

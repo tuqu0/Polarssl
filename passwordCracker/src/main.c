@@ -3,12 +3,10 @@
 int main(int argc, char **argv)
 {
     int opt;
-    bool ret;
     MODE mode;
     char *shadow, *dico;
-    
+
     /* *** Init *** */
-    ret = false;
     shadow = NULL;
     dico = NULL;
 
@@ -37,13 +35,12 @@ int main(int argc, char **argv)
     if (argc < 3 || shadow == NULL) 
     {
         usage(argv[0]);
-        ret = false;
         goto exit;
     }
 
     /* *** Cracking *** */
-    ret = crack(shadow, mode, dico);
+    crack(shadow, mode, dico);
 
 exit:
-    return ret;
+    return 0;
 }

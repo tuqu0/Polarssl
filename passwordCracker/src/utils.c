@@ -2,8 +2,8 @@
 
 void usage(char *program)
 {
-    printf("usage : %s -f <shadow> [-b] [-f <dico>]\n", program);
-    printf("-d <shadow>  fichier à cracker (/etc/shadow)\n");
-    printf("-b           mode brute force (par défaut)\n");
-    printf("-d <dico>    mode dictionnaire\n");
+    fprintf(stderr, "usage : %s -f <shadow> [-b] [-f <dico>]\n", program);
+    fprintf(stderr, "-f <shadow>  fichier à cracker (/etc/shadow)\n");
+    fprintf(stderr, "-b           mode brute force (par défaut)\n");
+    fprintf(stderr, "-d <dico>    mode dictionnaire\n");
 }
