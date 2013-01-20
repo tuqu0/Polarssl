@@ -1,9 +1,15 @@
 CC=gcc
 EXEC=passwordCracker
-FILES= ./src/main.c ./src/utils.c ./src/crack.c 
-CFLAGS= -ggdb -O0 -Wall
+FILES= ./src/main.c \
+       ./src/utils.c \
+       ./src/parser.c \
+       ./src/crack.c \
+       ./src/md5.c \
+       ./src/sha256.c \
+       ./src/sha512.c
+CFLAGS= -ggdb
 LDFLAGS= -L ./lib/
-LIBS= ./lib/libpolarssl-x86_64.a
+LIBS= ./lib/libpolarssl-i686.a
 OBJS=$(FILES:.c=.o)
 
 all: $(OBJS)

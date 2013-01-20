@@ -1,45 +1,66 @@
 #ifndef _CRACK_H_
 #define _CRACK_H_
 
- #include <stdio.h>
- #include <string.h>
- #include <stdlib.h>
+#include <stdio.h>
+#include <string.h>
+#include <stdlib.h>
 
- #include "utils.h"
+#include "utils.h"
+#include "parser.h"
+#include "md5.h"
+#include "sha256.h"
+#include "sha512.h"
 
- #define FIELD_PREFIX "$"
- #define ROUNDS_PREFIX "rounds="
- #define ROUNDS_DEFAULT 5000
- #define ROUNDS_MIN 1000
- #define ROUNDS_MAX 999999999
- #define SHA512 6
- #define SHA256 5
- #define MD5 1
+#define MIN(a,b) (((a)<(b))?(a):(b))
+#define MAX(a,b) (((a)>(b))?(a):(b))
+#define SALT_LEN_MAX 16
+#define ROUNDS_DEFAULT 5000
+#define ROUNDS_MIN 1000
+#define ROUNDS_MAX 999999999
+#define MD5 1
+#define SHA256 5
+#define SHA512 6
 
- /*
- * Informations abount a user account
+static char itoa64[] = 
+"./0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
+
+/*
+ * Modes available
  */
- typedef struct {
+typedef enum {
+    BRUTE_FORCE,
+    DICO
+} MODE;
+
+/*
+ * Informations about a user account
+ */
+typedef struct Account_ {
     char *login;
     int id; 
     int rounds;
     char *salt;
     char *hash;
- } Account;
+} Account;
 
- /*
+/*
  * Main function to crack all accounts in a shadow file
  */
- void crack(const char *shadow, MODE mode, const char *dico);
+void crack(const char *shadow, MODE mode, const char *dico);
 
- /*
- * Get accounts informations from the given shadow file
+/*
+ * Dictionary attack
  */
- Account** readShadowFile(const char *shadow);
+char* dictionaryAttack(Account *account, const char *dico);
 
- /*
- * Free the array of "ACCOUNT" elements
+/*
+ * Brute-force attack
  */
- void freeAccounts(Account **array);
+char* bruteforceAttack(Account *account);
+
+void _crypt_to64(char *s, u_long v, int n);
+
+void b64_from_24bit(uint8_t B2, uint8_t B1, uint8_t B0, int n,
+                    int *buflen, char **cp);
 
 #endif /* _CRACK_H_ */

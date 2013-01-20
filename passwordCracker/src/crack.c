@@ -6,7 +6,7 @@ void crack(const char *shadow, MODE mode, const char *dico)
     Account **accounts;
     Account *account;
 
-    /* *** Get accounts from shadwo file *** */
+    /* *** Get accounts informations from shadow file *** */
     accounts = readShadowFile(shadow);
     if (accounts == NULL)
     {
@@ -14,230 +14,141 @@ void crack(const char *shadow, MODE mode, const char *dico)
         return;     
     }
 
-    /* *** Print accounts informations *** */
-    accounts_len = 0;
-    while (accounts[accounts_len] != NULL)
-    	accounts_len++;
+    /* *** Crack each account *** */
+    accounts_len = AccountsLen(accounts);
     for (i = 0; i < accounts_len; i++)
     {
         account = accounts[i];
-        printf("login : %s\n", account->login);
-        printf("id : %d\n", account->id);
-        printf("rounds : %d\n", account->rounds);
-        printf("salt : %s\n", account->salt);
-        printf("hash : %s\n", account->hash);
+
+        if (mode == DICO)
+            dictionaryAttack(account, dico);
+        else
+            bruteforceAttack(account);
     }
 
     /* *** Restore memory *** */
     freeAccounts(accounts);
 }
 
-Account** readShadowFile(const char *shadow)
+char* dictionaryAttack(Account *account, const char *dico)
 {
-    int cpt, id, rounds, login_len, salt_len, hash_len;
     size_t read, len;
-    char *line, *line_saved, *token, *login, *salt, *hash;
+    char *word, *line, *password, *hash_word;
     FILE *f;
-    Account *account;
-    Account **accounts;
-    
+
     /* *** Init *** */
-    cpt = 0;
     read = 0;
     len = 0;
     line = NULL;
-    account = NULL;
-    accounts = NULL;
+    word = NULL;
+    hash_word = NULL;
+    password = NULL;
     f = NULL;
 
-    /* *** Read shadow file *** */
-    f = fopen(shadow, "r");
+    /* *** Check parameters *** */
+    if (dico == NULL)
+        goto exit;
+
+    f = fopen(dico, "r");
     if (f == NULL)
     {
-        fprintf(stderr, "error : unable to open %s\n", shadow);
+        fprintf(stderr, "error : unable to open %s\n", dico);
         goto exit;
     }
+
+    /* *** Display informations about the current account *** */
+    printf("################################\n");
+    printf("account : %s\n", account->login);
+    printf("id      : %d\n", account->id);
+    printf("rounds  : %d\n", account->rounds);
+    printf("words   :\n");
+
+    /* *** Try each word in the dictionary *** */
     while ((read = getline(&line, &len, f)) != EOF)
     {
-        /* *** Init *** */
-        line_saved = NULL;
-        token = NULL;
-        login = NULL;
-        salt = NULL;
-        hash = NULL;
-        id = 0;
-        rounds = 0;
-        login_len = 0;
-        salt_len = 0;
-        hash_len = 0;
+        word = strtok(line, "\r\n");
+        /* *** Display the testing word *** */
+        printf("         %s\n", word);
 
-        /* *** Copy the current line *** */
-        line_saved = (char *) malloc(strlen(line) + 1);
-        if (line_saved == NULL)
+        /* *** Hash the word with account algorithm, salt and rounds  *** */
+        switch(account->id)
         {
-            fprintf(stderr, "error : memory allocation failed\n");
-            goto exit;
+            case MD5:
+                hash_word = cipher_md5(word, account->salt,
+                        account->rounds);
+            case SHA256:
+                hash_word = cipher_sha256(word, account->salt,
+                        account->rounds);
+            case SHA512:
+                hash_word = crypt_sha512(word, account->salt,
+                        account->rounds);
         }
-        strcpy(line_saved, line);
-        line_saved[strlen(line)] = '\0';
- 
-        /* *** Parsing *** */
-        token = strtok(line, FIELD_PREFIX);
-        if (strcmp(line_saved, token))
+
+        /* *** Check if the word hash matches with password hash *** */
+        if (hash_word != NULL)
         {
-            /* *** login *** */
-            login_len = strlen(token) - 1; 
-            login = (char *) malloc(login_len + 1);
-            if (login == NULL)
+            if (!strcmp(account->hash, hash_word))
             {
-                fprintf(stderr, "error : memory allocation failed\n");
+                printf("\n---------------------------\n");
+                printf("Password found !\n");
+                printf("login    : %s\n", account->login);
+                printf("password : %s\n", word);
+                printf("---------------------------\n");
+                getchar();
+                free(hash_word);
                 goto exit;
             }
-            strncpy(login, token, login_len);
-            login[login_len] = '\0';
-            
-            /* *** algorithm *** */
-            token = strtok(NULL, FIELD_PREFIX);
-            if (token  == NULL)
-            {
-                fprintf(stderr, "error : invalid file format\n");
-                goto exit;
-            }
-            if ((id = atoi(token)) == 0
-                || (id != SHA512 && id != SHA256 && id != MD5))
-            {
-                fprintf(stderr, "error : invalid algorithm id\n");
-                goto exit;
-            }
-
-            /* *** rounds ? *** */
-            if (strstr(line_saved, ROUNDS_PREFIX))
-            {
-                token = strtok(NULL, FIELD_PREFIX);
-                if (token == NULL)
-                {
-                    fprintf(stderr, "error : invalid file format\n");
-                    goto exit;
-                }
-                token = strdup(token + strlen(ROUNDS_PREFIX));
-                if (token == NULL)
-                {
-                    fprintf(stderr, "error : memory allocation failed\n");
-                    goto exit;
-                }
-                if ((rounds = atoi(token)) == 0
-                    || (rounds < ROUNDS_MIN || rounds > ROUNDS_MAX))
-                {
-                    fprintf(stderr, "error : invalid rounds number\n");
-                    free(token);
-                    goto exit;
-                }
-                free(token); 
-            }
-            else
-                rounds = ROUNDS_DEFAULT;
-        
-            /* *** salt *** */
-            token = strtok(NULL, FIELD_PREFIX);
-            if (token == NULL)
-            {
-                fprintf(stderr, "error : invalid file format\n");
-                goto exit;
-            }
-            salt_len = strlen(token);
-            salt = (char *) malloc(salt_len + 1);
-            if (salt == NULL)
-            {
-                fprintf(stderr, "error : memory allocation failed\n");
-                goto exit;
-            }
-            strcpy(salt, token);
-            salt[salt_len] = '\0';
-
-            /* *** hash *** */
-            token = strtok(NULL, ":");
-            if (token == NULL)
-            {
-                fprintf(stderr, "error : invalid file format\n");
-                goto exit;
-            }
-            hash_len = strlen(token);
-            hash = (char *) malloc(hash_len + 1);
-            if (hash == NULL)
-            {
-                fprintf(stderr, "error : memory allocation failed\n");
-                goto exit;
-            }
-            strcpy(hash, token);
-            hash[hash_len] = '\0';
-  
-            /* *** Store informations about the current account *** */
-            account = (Account *) malloc(sizeof(Account));
-            if (account == NULL)
-            {
-                fprintf(stderr, "error : memory allocation failed\n");
-                goto exit;
-            }
-            account->login = login;
-            account->salt = salt;
-            account->hash = hash;
-            account->id = id;
-            account->rounds = rounds;
-            accounts = (Account **) realloc(accounts, (cpt + 1) *
-                                            sizeof(Account));
-            if (accounts == NULL)
-            {
-                fprintf(stderr, "error : memory allocation failed\n");
-                goto exit;
-            }
-            accounts[cpt] = account;
-            cpt++;
+            free(hash_word);
         }
 
         /* *** Restore memory *** */
-        free(line_saved);
         free(line);
-        line_saved = NULL;       
         line = NULL;
+        word = NULL;
+        hash_word = NULL;
     }
 
 exit:
-    if (accounts != NULL)
-        accounts[cpt] = NULL;
     if (f != NULL)
         fclose(f);
     if (line != NULL)
         free(line);
-    if (line_saved != NULL)
-        free(line_saved);
-    return accounts;
+    return password;
 }
 
-void freeAccounts(Account **array)
+char* bruteforceAttack(Account *account)
 {
-    int i, len;
-    Account *it;
+    char *password;
 
-    /* *** Check parameters *** */
-    if (array == NULL)
-        return;
+    /* *** Init *** */
+    password = NULL;
 
-    /* *** Get list length *** */
-    len = 0;
-    while(array[len] != NULL)
-        len++;
+    printf("Brute force attack not implemented yet\n");
 
-    /* *** Free each element *** */
-    for (i = 0; i < len; i++)
-    {
-        it = array[i];
-        if (it->login != NULL)
-            free(it->login);
-        if (it->salt != NULL)
-            free(it->salt);
-        if (it->hash != NULL)
-            free(it->hash);
-        free(it);           
+exit: 
+    return password;
+}
+
+void _crypt_to64(char *s, u_long v, int n)
+{
+    while (--n >= 0) {
+        *s++ = itoa64[v&0x3f];
+        v >>= 6;
     }
-    free(array);
+}
+
+void b64_from_24bit(uint8_t B2, uint8_t B1, uint8_t B0, int n,
+                    int *buflen, char **cp)
+{
+    uint32_t w;
+    int i;
+
+    w = (B2 << 16) | (B1 << 8) | B0;
+    for (i = 0; i < n; i++) {
+        **cp = itoa64[w&0x3f];
+        (*cp)++;
+        if ((*buflen)-- < 0)
+            break;
+        w >>= 6;
+    }
 }
