@@ -80,6 +80,9 @@ char* dictionaryAttack(Account *account, const char *dico)
     while ((read = getline(&line, &len, f)) != EOF)
     {
         word = strtok(line, "\r\n");
+        if (word == NULL)
+            word = "";
+
         /* *** Display the testing word *** */
         printf("         %s\n", word);
 
