@@ -14,6 +14,7 @@ Account** readShadowFile(const char *shadow)
     read = 0;
     len = 0;
     line = NULL;
+    line_saved = NULL;
     account = NULL;
     accounts = NULL;
     f = NULL;
