@@ -2,16 +2,16 @@
 
 char* crypt_sha512(const char *key, const char *salt, size_t rounds)
 {
-    static char *buffer;
+    char *buffer;
 
-    buffer = (char *) malloc(OUTPUT_LEN + 1);
+    buffer = (char *) malloc(OUTPUT_SHA512_LEN + 1);
     if (buffer == NULL)
     {
         fprintf(stderr, "error : memory allocation failed\n");
         return NULL;
     }
 
-    return crypt_sha512_r(key, salt, rounds, buffer, OUTPUT_LEN + 1);
+    return crypt_sha512_r(key, salt, rounds, buffer, OUTPUT_SHA512_LEN + 1);
 }
 
 char* crypt_sha512_r(const char *key, const char *salt, size_t rounds,

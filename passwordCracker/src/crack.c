@@ -57,9 +57,22 @@ char* dictionaryAttack(Account *account, const char *dico)
     }
 
     /* *** Display informations about the current account *** */
-    printf("################################\n");
+    printf("#############################################################\
+################\n");
     printf("account : %s\n", account->login);
-    printf("id      : %d\n", account->id);
+    switch(account->id)
+    {
+	case MD5:
+	    printf("type    : MD5\n");
+	    break;
+	case SHA256:
+	    printf("type    : SHA-256\n");
+	    break;
+	case SHA512:
+	    printf("type    : SHA-512\n");
+	    break;
+    }
+    printf("salt    : %s\n", account->salt);
     printf("rounds  : %d\n", account->rounds);
     printf("words   :\n");
 
@@ -74,14 +87,16 @@ char* dictionaryAttack(Account *account, const char *dico)
         switch(account->id)
         {
             case MD5:
-                hash_word = cipher_md5(word, account->salt,
-                        account->rounds);
+                hash_word = crypt_md5(word, account->salt, account->rounds);
+		break;
             case SHA256:
-                hash_word = cipher_sha256(word, account->salt,
+                hash_word = crypt_sha256(word, account->salt,
                         account->rounds);
+		break;
             case SHA512:
                 hash_word = crypt_sha512(word, account->salt,
                         account->rounds);
+		break;
         }
 
         /* *** Check if the word hash matches with password hash *** */
@@ -89,11 +104,9 @@ char* dictionaryAttack(Account *account, const char *dico)
         {
             if (!strcmp(account->hash, hash_word))
             {
-                printf("\n---------------------------\n");
-                printf("Password found !\n");
+                printf("\n>>>>>>>>>> Paswword found ! :) <<<<<<<<<<\n");
                 printf("login    : %s\n", account->login);
                 printf("password : %s\n", word);
-                printf("---------------------------\n");
                 getchar();
                 free(hash_word);
                 goto exit;

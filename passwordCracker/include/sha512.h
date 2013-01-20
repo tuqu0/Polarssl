@@ -15,7 +15,7 @@
 #include "polarssl/sha4.h"
 #include "crack.h"
 
-#define OUTPUT_LEN 86
+#define OUTPUT_SHA512_LEN 86
 
 /*
  * Hash a word with given salt and number of rounds, then

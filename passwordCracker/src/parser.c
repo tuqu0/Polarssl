@@ -102,6 +102,8 @@ Account** readShadowFile(const char *shadow)
                 }
                 free(token); 
             }
+            else if (id == MD5)
+                rounds = ROUNDS_MIN;
             else
                 rounds = ROUNDS_DEFAULT;
 
