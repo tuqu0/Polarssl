@@ -43,6 +43,7 @@ typedef struct Account_ {
     int rounds;
     char *salt;
     char *hash;
+    char *password;
 } Account;
 
 /*
@@ -54,12 +55,12 @@ void crack(const char *shadow, MODE mode, const char *dico,
 /*
  * Dictionary attack
  */
-char* dictionaryAttack(Account *account, const char *dico);
+void dictionaryAttack(Account **accounts, const char *dico);
 
 /*
  * Brute-force attack
  */
-char* bruteforceAttack(Account *account, int bruteforce_len);
+void bruteforceAttack(Account **accounts, int bruteforce_len);
 
 void _crypt_to64(char *s, u_long v, int n);
 

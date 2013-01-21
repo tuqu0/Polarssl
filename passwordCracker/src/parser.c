@@ -159,6 +159,7 @@ Account** readShadowFile(const char *shadow)
             account->hash = hash;
             account->id = id;
             account->rounds = rounds;
+            account->password = NULL;
             accounts = (Account **) realloc(accounts, (cpt + 1) *
                     sizeof(Account));
             if (accounts == NULL)

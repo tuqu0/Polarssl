@@ -3,10 +3,9 @@
 void crack(const char *shadow, MODE mode, const char *dico,
         int bruteforceLen)
 {
-    int i, accounts_len;
-    char *password;
-    Account **accounts;
-    Account *account;
+    int i, nb;
+    Account **accounts = NULL;
+    Account *account = NULL;
 
     /* *** Get accounts informations from shadow file *** */
     accounts = readShadowFile(shadow);
@@ -16,73 +15,65 @@ void crack(const char *shadow, MODE mode, const char *dico,
         return;     
     }
 
-    /* *** Crack each account *** */
-    accounts_len = AccountsLen(accounts);
-    for (i = 0; i < accounts_len; i++)
+    /* *** Launch attack *** */
+    if (mode == DICO)
+        dictionaryAttack(accounts, dico);
+    else
+        bruteforceAttack(accounts, bruteforceLen);
+
+    /* *** Display results for each account *** */
+    nb = AccountsLen(accounts);
+    for (i = 0; i < nb; i++)
     {
         account = accounts[i];
 
-        /* *** Display informations about the current account *** */
-        printf("**************************************************"\
-               "******************\n");
-        printf("account : %s\n", account->login);
+        printf("\n**************************************************"\
+                "******************\n");
+        printf("login    : %s\n", account->login);
         switch(account->id)
         {
             case MD5:
-                printf("type    : MD5\n");
+                printf("type     : MD5\n");
                 break;
             case SHA256:
-                printf("type    : SHA-256\n");
+                printf("type     : SHA-256\n");
                 break;
             case SHA512:
-                printf("type    : SHA-512\n");
+                printf("type     : SHA-512\n");
                 break;
         }
-        printf("salt    : %s\n", account->salt);
-        printf("rounds  : %d\n", account->rounds);
-        printf("words   :\n");
-
-        /* *** Launch attack *** */
-        password = NULL;
-        if (mode == DICO)
-            password = dictionaryAttack(account, dico);
+        printf("salt     : %s\n", account->salt);
+        printf("rounds   : %d\n", account->rounds);
+        printf("login    : %s\n", account->login);
+        if (account->password != NULL)
+            printf("password : %s\n", account->password);
         else
-            password = bruteforceAttack(account, bruteforceLen);
-
-        /* *** Check results *** */
-        if (password != NULL)
-        {
-            printf("\n>>>>>>>>>> Paswword found ! :) <<<<<<<<<<\n");
-            printf("login    : %s\n", account->login);
-            printf("password : %s\n", password);
-            free(password);
-            getchar();
-        }
+            printf("password not found\n");
     }
 
     /* *** Restore memory *** */
     freeAccounts(accounts);
 }
 
-char* dictionaryAttack(Account *account, const char *dico)
+void dictionaryAttack(Account **accounts, const char *dico)
 {
+    int i, nb, found;
     size_t read, len;
-    char *line, *token, *word, *hash_word;
-    FILE *f;
+    char *line = NULL;
+    char *word = NULL;
+    char *hash = NULL;
+    FILE *f = NULL;
+    Account *account = NULL;
 
     /* *** Init *** */
-    read = 0;
-    len = 0;
-    line = NULL;
-    token = NULL;
-    word = NULL;
-    hash_word = NULL;
-    f = NULL;
+    nb = AccountsLen(accounts);
+    found = 0;
 
     /* *** Check parameters *** */
-    if (dico == NULL)
+    if (accounts == NULL || dico == NULL)
         goto exit;
 
+    /* *** Try to open the dictionary *** */
     f = fopen(dico, "r");
     if (f == NULL)
     {
@@ -93,82 +84,98 @@ char* dictionaryAttack(Account *account, const char *dico)
     /* *** Try each word in the dictionary *** */
     while ((read = getline(&line, &len, f)) != EOF)
     {
-        token = strtok(line, "\r\n");
-        if (token == NULL)
+        /* *** If all accounts have been cracked *** */
+        if (found == nb)
+            goto exit;
+
+        word = strtok(line, "\r\n");
+        if (word == NULL)
             continue;
-        else
+
+        /* *** Print the word *** */
+        printf(" %s\n", word);
+
+        /* *** Try the word for each account *** */
+        for (i = 0; i < nb; i++)
         {
-            word = (char *) malloc(strlen(token) + 1);
-            if (word == NULL)
+            account = accounts[i];
+            switch(account->id)
             {
-                fprintf(stderr, "error : memory allocation failed\n");
-                goto exit;
+                case MD5:
+                    hash = crypt_md5(word, account->salt, account->rounds);
+                    break;
+                case SHA256:
+                    hash = crypt_sha256(word, account->salt,
+                            account->rounds);
+                    break;
+                case SHA512:
+                    hash = crypt_sha512(word, account->salt,
+                            account->rounds);
+                    break;
             }
-            strcpy(word, token);
-            word[strlen(token)] = '\0';
-        }
 
-        /* *** Display the testing word *** */
-        printf("           %s\n", word);
-
-        /* *** Hash the word with account algorithm, salt and rounds *** */
-        switch(account->id)
-        {
-            case MD5:
-                hash_word = crypt_md5(word, account->salt,
-                        account->rounds);
-                break;
-            case SHA256:
-                hash_word = crypt_sha256(word, account->salt,
-                        account->rounds);
-                break;
-            case SHA512:
-                hash_word = crypt_sha512(word, account->salt,
-                        account->rounds);
-                break;
-        }
-
-        /* *** Check if the word hash matches with password hash *** */
-        if (hash_word != NULL)
-        {
-            if (!strcmp(account->hash, hash_word))
+            /* *** Check if the hash is identical *** */
+            if (hash != NULL)
             {
-                free(hash_word);
-                free(line);
-                goto exit;
+                if (account->password == NULL && 
+                        !strcmp(account->hash, hash))
+                {
+                    printf("\nlogin    : %s\n", account->login);
+                    printf("password : %s\n", word);
+                    account->password = (char *) malloc(strlen(word) + 1);
+                    if (account->password == NULL)
+                    {
+                        fprintf(stderr, "error : memory allocation "\
+                                "failed\n");
+                        goto exit;
+                    }
+                    strcpy(account->password, word);
+                    memset(account->password + strlen(word), '\0', 1);
+                    found++;
+                    getchar();
+                }
+                free(hash);
             }
-            free(hash_word);
         }
 
         /* *** Restore memory *** */
-        free(word);
         free(line);
         line = NULL;
-        token = NULL;
         word = NULL;
-        hash_word = NULL;
+        hash = NULL;
     }
 
 exit:
     if (f != NULL)
         fclose(f);
-    return word;
+    if (line != NULL)
+        free(line);
+    if (hash != NULL)
+        free(hash);
 }
 
-char* bruteforceAttack(Account *account, int max_len)
+void bruteforceAttack(Account **accounts, int max_len)
 {
-    int i,j;
-    char *word, *hash_word;
+    int i, j, k, nb, found;
+    char *word = NULL;
+    char *hash = NULL;
+    Account *account = NULL;
 
     /* *** Check parameters *** */
+    if (accounts == NULL)
+        goto exit;
     if (max_len < 1)
         max_len = BRUTE_FORCE_DEFAULT_LEN;
+
+    /* *** Init *** */
+    nb = AccountsLen(accounts);
+    found = 0;
 
     word = malloc((max_len + 1) * sizeof(char));
     if (word == NULL)
     {
         fprintf(stderr, "error : memory allocation failed\n");
-        return;
+        goto exit;
     }
 
     for (i = 1; i <= max_len; i++)
@@ -176,39 +183,58 @@ char* bruteforceAttack(Account *account, int max_len)
         for (j = 0; j < i; j++)
             word[j]='a';
         word[i]=0;
-
+    
         do
         {
+            /* *** If all accounts have been cracked *** */
+            if (found == nb)
+                goto exit;
+
             /* *** Display the testing word *** */
-            printf("           %s\n", word);
+            printf(" %s\n", word);
 
-            /* *** Get the hash of the word *** */
-            hash_word = NULL;
-            switch(account->id)
+            /* *** Try the word for each account *** */
+            for (k = 0; k < nb; k++)
             {
-                case MD5:
-                    hash_word = crypt_md5(word, account->salt,
-                            account->rounds);
-                    break;
-                case SHA256:
-                    hash_word = crypt_sha256(word, account->salt,
-                            account->rounds);
-                    break;
-                case SHA512:
-                    hash_word = crypt_sha512(word, account->salt,
-                            account->rounds);
-                    break;
-            }
+                account = accounts[k];
 
-            /* *** Check if the word hash matches with password hash *** */
-            if (hash_word != NULL)
-            {
-                if (!strcmp(account->hash, hash_word))
+                /* *** Get the hash of the word *** */
+                switch(account->id)
                 {
-                    free(hash_word);
-                    goto exit;
+                    case MD5:
+                        hash = crypt_md5(word, account->salt,
+                                account->rounds);
+                        break;
+                    case SHA256:
+                        hash = crypt_sha256(word, account->salt,
+                                account->rounds);
+                        break;
+                    case SHA512:
+                        hash = crypt_sha512(word, account->salt,
+                                account->rounds);
+                        break;
+                }   
+
+                /* *** Check if the word hash is identical *** */
+                if (hash != NULL)
+                {
+                    if (account->password == NULL && 
+                        !strcmp(account->hash, hash))
+                    {
+                        printf("\nlogin    : %s\n", account->login);
+                        printf("password : %s\n", word);
+                        account->password = (char *) malloc(strlen(word)
+                                                             + 1);
+                        if (account->password == NULL)
+                            fprintf(stderr, "error : memory allocation "\
+                                    "failed\n");
+                        memset(account->password + strlen(word), '\0', 1);
+                        getchar();
+                        found++;
+                    }
+                    free(hash);
+                    hash = NULL;
                 }
-                free(hash_word);
             }
         } while (inc(word));
     }
@@ -218,7 +244,9 @@ char* bruteforceAttack(Account *account, int max_len)
     word = NULL;
 
 exit:
-    return word;
+    if (hash != NULL)
+        free(hash);
+    return ;
 }
 
 int inc(char *c)
@@ -273,7 +301,7 @@ int AccountsLen(Account **array)
 
 void freeAccounts(Account **array)
 {
-    int i, len;
+    int i, nb;
     Account *it;
 
     /* *** Check parameters *** */
@@ -281,10 +309,10 @@ void freeAccounts(Account **array)
         return;
 
     /* *** Get array length *** */
-    len = AccountsLen(array);
+    nb = AccountsLen(array);
 
     /* *** Free each element *** */
-    for (i = 0; i < len; i++)
+    for (i = 0; i < nb; i++)
     {
         it = array[i];
         if (it->login != NULL)
@@ -293,6 +321,8 @@ void freeAccounts(Account **array)
             free(it->salt);
         if (it->hash != NULL)
             free(it->hash);
+        if (it->password != NULL)
+            free(it->password);
         free(it);           
     }
     free(array);
