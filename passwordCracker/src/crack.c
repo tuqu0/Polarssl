@@ -23,8 +23,8 @@ void crack(const char *shadow, MODE mode, const char *dico,
         account = accounts[i];
 
         /* *** Display informations about the current account *** */
-        printf("**************************************************\
-******************\n");
+        printf("**************************************************"\
+               "******************\n");
         printf("account : %s\n", account->login);
         switch(account->id)
         {
@@ -258,4 +258,42 @@ void b64_from_24bit(uint8_t B2, uint8_t B1, uint8_t B0, int n,
             break;
         w >>= 6;
     }
+}
+
+int AccountsLen(Account **array)
+{
+    int accounts_len;
+
+    accounts_len = 0;
+    while (array[accounts_len] != NULL)
+        accounts_len++;
+
+    return accounts_len;
+}
+
+void freeAccounts(Account **array)
+{
+    int i, len;
+    Account *it;
+
+    /* *** Check parameters *** */
+    if (array == NULL)
+        return;
+
+    /* *** Get array length *** */
+    len = AccountsLen(array);
+
+    /* *** Free each element *** */
+    for (i = 0; i < len; i++)
+    {
+        it = array[i];
+        if (it->login != NULL)
+            free(it->login);
+        if (it->salt != NULL)
+            free(it->salt);
+        if (it->hash != NULL)
+            free(it->hash);
+        free(it);           
+    }
+    free(array);
 }

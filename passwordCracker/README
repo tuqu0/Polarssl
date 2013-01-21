@@ -46,3 +46,14 @@ Par manque de temps, le code source des fichiers "src/sha256.c",
 Le code à été adapté pour utiliser la bibliothèque Polarssl.
 source : "http://www.freebsd.org/cgi/cvsweb.cgi/src/lib/libcrypt/"
 
+* Optimisation
+La performance du cracker peut être optimisée en modifiant la logique de
+cracking pour plusieurs comptes.
+Pour le moment, en tente de cracker un compte à la fois : 
+En mode dictionnaire cela revient à le parcourir autant de fois que de
+comptes à cracker.
+En mode brute force, on génère tous les chaînes possibles autant de fois
+que de comptes à cracker également.
+Pour améliorer le temps de recherche, il faudrait dès que l'on dipose d'un
+mot de passe à tester (un mot du dictionnaire ou du brute force), le
+tester pour tous les comptes à cracker.

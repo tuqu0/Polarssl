@@ -66,4 +66,14 @@ void _crypt_to64(char *s, u_long v, int n);
 void b64_from_24bit(uint8_t B2, uint8_t B1, uint8_t B0, int n,
                     int *buflen, char **cp);
 
+/*
+ * Return the number of "Account" elements
+ */
+int AccountsLen(struct Account_ **array);
+
+/*
+ * Free the array of "Account" elements
+ */
+void freeAccounts(struct Account_ **array);
+
 #endif /* _CRACK_H_ */
